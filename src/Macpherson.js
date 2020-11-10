@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js'
 import React from 'react';
 import * as geometric from 'geometric';
-import { render } from '@testing-library/react';
+import { Slider, Typography } from '@material-ui/core'
 
 const width = 1000
 const height = 1000
@@ -14,7 +14,7 @@ class VehicleFrontProfile {
         const vehWidthTop = 400
         const vehWidthBottom = 225
         this.angle = 0;
-
+        this.container = container;
         this.vehOrigin = [350, 300];
         
         const thisRef = this;
@@ -35,10 +35,19 @@ class VehicleFrontProfile {
         this.joints.forEach( function(value, index, array) {
             const rotated = geometric.pointRotate(value, thisRef.angle, thisRef.vehOrigin)
             array[index] = rotated;
-        });
+        });        
+    }
 
+    getJoints() {
+        return this.joints;
+    }
 
+    render() {
         const graphics = new PIXI.Graphics();
+        if(this.graphics) {
+            this.container.removeChild(this.graphics);
+        }
+        this.graphics = graphics;
         graphics.beginFill(0xFF3300);
         graphics.lineStyle(4, 0xffd900, 1);
         graphics.moveTo(this.joints[0][0], this.joints[0][1]);
@@ -47,11 +56,7 @@ class VehicleFrontProfile {
         graphics.lineTo(this.joints[2][0], this.joints[2][1]);
         graphics.closePath();
         graphics.endFill();
-        container.addChild(graphics)
-    }
-
-    getJoints() {
-        return this.joints;
+        this.container.addChild(graphics)
     }
 }
 
@@ -63,57 +68,51 @@ class LowerControlArm {
         this.wheelAssembly = wheelAssembly;
         this.boundedVehiclePointProvider = boundedVehiclePointProvider;
         this.armLength = armLength;
-        this.render();
+        this.armAngle = 175;
     }
 
     render() {
         const container = this.container;
         const graphics = new PIXI.Graphics();
-
         if(this.graphics) {
             container.removeChild(this.graphics);      
         }
         this.graphics = graphics;
-
-        this.contraintsMet();
-        while(!this.contraintsMet()){
-            const knuckleJoint = this.wheelAssembly.getJoints()[1];
-            const vehicleJoint = this.boundedVehiclePointProvider();
-            const pointB = geometric.pointTranslate(vehicleJoint, this.armAngle(), this.armLength - this.actualArmLenth());
-            const vectorChange = [
-                pointB[0] - vehicleJoint[0],
-                pointB[1] - vehicleJoint[1]
-            ]
-            this.wheelAssembly.moveRelative(vectorChange);
-        }
-
         const knuckleJoint = this.wheelAssembly.getJoints()[1];
         const vehicleJoint = this.boundedVehiclePointProvider();
         //drawing arm
         graphics.lineStyle(3, 0xFADDFF, 1);
         graphics.moveTo(knuckleJoint[0], knuckleJoint[1]);
         graphics.lineTo(vehicleJoint[0], vehicleJoint[1]);
-
         container.addChild(graphics);
-
-
     }
 
-    armAngle() {
-        const knuckleJoint = this.wheelAssembly.getJoints()[1];
-        const vehicleJoint = this.boundedVehiclePointProvider();
-        return geometric.lineAngle([vehicleJoint, knuckleJoint]);
+    testConstraintsAndAdjust() {
+        if(!this.contraintsMet()){
+            this.wheelAssembly.moveRelative(this.vectorDistanceFromEndOfArmToKnucklePoint());
+            return false;
+        }
+        return true;
     }
 
-    actualArmLenth() {
+    vectorDistanceFromEndOfArmToKnucklePoint() {
         const knuckleJoint = this.wheelAssembly.getJoints()[1];
         const vehicleJoint = this.boundedVehiclePointProvider();
-        return geometric.lineLength([knuckleJoint, vehicleJoint]);
+        const expectedKnuckleJointLocation = geometric.pointTranslate(vehicleJoint, this.armAngle, this.armLength);
+        const vectorChange = [
+            expectedKnuckleJointLocation[0] - knuckleJoint[0],
+            expectedKnuckleJointLocation[1] - knuckleJoint[1]
+        ]
+        return vectorChange;
+    }
+
+    setArmAngle(angle) {
+        this.armAngle = angle;
     }
 
     contraintsMet() {
-        const actual = this.actualArmLenth();
-        return actual.toFixed(3) === this.armLength.toFixed(3);
+        const point = this.vectorDistanceFromEndOfArmToKnucklePoint();
+        return Math.abs(point[0].toFixed(3)) < 0.008 && Math.abs(point[1].toFixed(3)) < 0.008;
     }
 }
 
@@ -125,7 +124,18 @@ class Struct {
         this.boundedVehiclePointProvider = boundedVehiclePointProvider;
         this.angleOnKnuckle = angleOnKnuckle;
         this.wheelAssembly = wheelAssembly;
-        this.render();
+    }
+
+    testConstraintsAndAdjust() {
+        if(!this.constraintsMet()) {
+            const angleOnKnuckle = this.angleOnKnuckle;
+            const boundedVehiclePoint = this.boundedVehiclePointProvider();
+            var strutAngle = geometric.lineAngle([ this.wheelAssembly.getJoints()[0], boundedVehiclePoint]) + 90;
+            var expectedCamber = strutAngle - angleOnKnuckle;
+            this.wheelAssembly.setCamber(expectedCamber);
+            return false;
+        }
+        return true;
     }
 
     render() {
@@ -133,21 +143,11 @@ class Struct {
         const graphics = new PIXI.Graphics();
         const wheelAssembly = this.wheelAssembly;
         const boundedVehiclePoint = this.boundedVehiclePointProvider();
-        const angleOnKnuckle = this.angleOnKnuckle;
 
         if(this.graphics) {
             container.removeChild(this.graphics);      
         }
         this.graphics = graphics;
-
-
-
-        //adjust wheel assembly for struct mounted on knuckle constraint
-        while(!this.constraintsMet()) {
-            var strutAngle = geometric.lineAngle([ wheelAssembly.getJoints()[0], boundedVehiclePoint]) + 90;
-            var expectedCamber = strutAngle - angleOnKnuckle;
-            wheelAssembly.setCamber(expectedCamber);
-        }
 
         //strut shape
         const topKnucklePoint = wheelAssembly.getJoints()[0];
@@ -177,16 +177,22 @@ class WheelAssembly {
         this.wheelOffset = wheelOffset;
         this.hubFaceCenterOrigin = [width/2 - 300,  height/2+ 100]; 
         this.camber = 0;
-        this.render();
-    }
 
-    getJoints() {
-        return this.joints;
+        this.renderConstant = 0.4
+
+        const topKnuckleJointVerticalOffsetMM = 100;
+        const topKnuckleJointHorizontalOffsetMM = 80;
+        const lowerKnuckleJointVeritcalOffsetMM = 100;
+        const lowerKnuckleJointHorizontalOffsetMM = 50;
+
+        this.topKnuckleJointVerticalOffsetPixel = topKnuckleJointVerticalOffsetMM * this.renderConstant;
+        this.topKnuckleJointHorizontalOffsetPixel = topKnuckleJointHorizontalOffsetMM * this.renderConstant;
+        this.lowerKnuckleJointVeritcalOffsetPixel = lowerKnuckleJointVeritcalOffsetMM * this.renderConstant;
+        this.lowerKnuckleJointHorizontalOffsetPixel = lowerKnuckleJointHorizontalOffsetMM * this.renderConstant;
     }
 
     setCamber(camber) {
         this.camber = camber;
-        this.render();
     }
 
     getCamber() { return this.camber; }
@@ -194,7 +200,6 @@ class WheelAssembly {
     moveRelative(point) {
         this.hubFaceCenterOrigin[0] += point[0];
         this.hubFaceCenterOrigin[1] += point[1];
-        this.render()
     }
 
     render() {
@@ -204,25 +209,15 @@ class WheelAssembly {
         const wheelSizeInch = this.wheelSizeInch;
         const wheelOffset = this.wheelOffset;
         const camber = this.camber;
-
+        const renderConstant = this.renderConstant;
         const sideWallHeight = tireWidth * (tireRatio/100)
         const wheelSizeInMM = wheelSizeInch * 25.4
         const tireHeightMM = (sideWallHeight * 2) + wheelSizeInMM
-        const renderConstant = 0.4
+        
         const tireHeightPixels = tireHeightMM * renderConstant
         const wheelOffsetPixles = wheelOffset * renderConstant;
         this.tireWidthPixes = tireWidth * renderConstant
-        
-
-        const topKnuckleJointVerticalOffsetMM = 100;
-        const topKnuckleJointHorizontalOffsetMM = 80;
-        const lowerKnuckleJointVeritcalOffsetMM = 100;
-        const lowerKnuckleJointHorizontalOffsetMM = 50;
-
-        const topKnuckleJointVerticalOffsetPixel = topKnuckleJointVerticalOffsetMM * renderConstant;
-        const topKnuckleJointHorizontalOffsetPixel = topKnuckleJointHorizontalOffsetMM * renderConstant;
-        const lowerKnuckleJointVeritcalOffsetPixel = lowerKnuckleJointVeritcalOffsetMM * renderConstant;
-        const lowerKnuckleJointHorizontalOffsetPixel = lowerKnuckleJointHorizontalOffsetMM * renderConstant;
+    
         const hubFaceCenterOrigin = this.hubFaceCenterOrigin;
         
         
@@ -233,13 +228,7 @@ class WheelAssembly {
         }
         this.graphics = graphics;
 
-        const joints = [ 
-            // joint 0 - top knuckle
-            [topKnuckleJointHorizontalOffsetPixel, -topKnuckleJointVerticalOffsetPixel ],
-            // joint 1 - lower knuckle
-            [lowerKnuckleJointHorizontalOffsetPixel, lowerKnuckleJointVeritcalOffsetPixel]
-         ];
-        
+     
         //tire shape
         const tireOrigin = [
             -(this.tireWidthPixes / 2) + wheelOffsetPixles,
@@ -266,41 +255,42 @@ class WheelAssembly {
        
         graphics.endFill();
 
-        joints.forEach(function(value) {
+        this.getJointsRelativeToHubFace().forEach(function(value) {
             graphics.lineStyle(0);
             graphics.beginFill(0xDE3249, 1);
             graphics.drawCircle(value[0], value[1], jointSize);
             graphics.endFill();
 
         });
-
         graphics.position.x = hubFaceCenterOrigin[0];
         graphics.position.y = hubFaceCenterOrigin[1];
-
         graphics.angle = camber;
-
-
-
-         joints.forEach( function(value, index, array) {
-            const translatedJoint = [ value[0] + hubFaceCenterOrigin[0],  value[1] + hubFaceCenterOrigin[1]];
-            const rotated = geometric.pointRotate(translatedJoint, camber, hubFaceCenterOrigin)
-            array[index] = rotated;
-        });
-
-
         container.addChild(graphics);
-
-        this.joints = joints;
-
     }
 
+    getJoints() {
+        const hubFaceCenterOrigin = this.hubFaceCenterOrigin;
+        const camber = this.camber;
+        const joints =  this.getJointsRelativeToHubFace();
+        const rotatedJoints = joints.map( joint => {
+            const translatedJoint = [ joint[0] + hubFaceCenterOrigin[0],  joint[1] + hubFaceCenterOrigin[1]];
+            const rotated = geometric.pointRotate(translatedJoint, camber, hubFaceCenterOrigin)
+            return rotated
+        }
+        );
+
+        return rotatedJoints;
+    }
+
+    getJointsRelativeToHubFace() {
+        return [ 
+            // joint 0 - top knuckle
+            [this.topKnuckleJointHorizontalOffsetPixel, -this.topKnuckleJointVerticalOffsetPixel ],
+            // joint 1 - lower knuckle
+            [this.lowerKnuckleJointHorizontalOffsetPixel, this.lowerKnuckleJointVeritcalOffsetPixel]
+         ];
+    }
 }
-
-
-
-
-
-
 
 
 export default class Macpherson extends React.Component {
@@ -312,6 +302,21 @@ export default class Macpherson extends React.Component {
         })  
     }
 
+    testConstraintsAndAdjust() {
+        var allConstraintsMet = false;
+        while(!allConstraintsMet) {
+            allConstraintsMet = true;
+            this.constrainingComponents.forEach(function(value){
+                if(!value.testConstraintsAndAdjust()) {
+                    allConstraintsMet = false;
+                }
+            })
+        }
+        this.suspensionComponents.forEach(function(value) {
+           value.render(); 
+        });
+    }
+
     setup() {
 
         const container = new PIXI.Container();
@@ -319,23 +324,16 @@ export default class Macpherson extends React.Component {
         this.app.stage.addChild(container);
 
         const vehicle = new VehicleFrontProfile(container)
+        const lWheel = new WheelAssembly(container, 265, 45, 17, -30, true)
+        const lStrut = new Struct(container, lWheel, function() { return vehicle.getJoints()[0]; }, 15)
+        const lLowerControlArm = new LowerControlArm(container, lWheel, function() { return vehicle.getJoints()[2]; }, 200);
 
-        const lWheel = new WheelAssembly(container, 255, 45, 17, -30, true)
-        // const rWheel = new WheelAssembly(container, 255, 45, 17, 70, false)
-        
-         const lStrut = new Struct(container, lWheel, function() { return vehicle.getJoints()[0]; }, 8)
-         const lLowerControlArm = new LowerControlArm(container, lWheel, function() { return vehicle.getJoints()[2]; }, 150);
+        this.lStrut = lStrut;
+        this.lLowerControlArm = lLowerControlArm;
 
-         while(!lStrut.constraintsMet() || !lLowerControlArm.contraintsMet()) {
-             lStrut.render();
-             lLowerControlArm.render();
-         }
-        // // Listen for animate update
-        // this.app.ticker.add((delta) => {
-        //     // rotate the container!
-        //     // use delta to create frame-independent transform
-        //     //lStrut.constrain()
-        // });
+        this.constrainingComponents = [ lStrut, lLowerControlArm];
+        this.suspensionComponents = [ lStrut, lLowerControlArm, lWheel, vehicle];
+        this.testConstraintsAndAdjust();
 
     }
         
@@ -347,8 +345,26 @@ export default class Macpherson extends React.Component {
            this.setup();
         } 
     };
+
       
     render() {
-        return <div ref={this.updatePixiCnt} />;
+
+        const componentRef = this;
+
+        return <div>
+      <Slider
+        defaultValue={160}
+        aria-labelledby="discrete-slider-small-steps"
+        step={1}
+        marks
+        onChange={function(event, value) {
+            componentRef.lLowerControlArm.setArmAngle(value);
+            componentRef.testConstraintsAndAdjust();
+        }}
+        min={100}
+        max={200}
+        valueLabelDisplay="off"
+      />
+      <div ref={this.updatePixiCnt} /></div>;
       }
 }
