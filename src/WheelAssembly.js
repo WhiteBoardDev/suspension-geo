@@ -13,6 +13,7 @@ export default class WheelAssembly {
         this.wheelOffset = wheelOffset;
         this.hubFaceCenterOrigin = [200,  200]; 
         this.camber = 0;
+        this.measurements = []; // TODO
 
         this.renderConstant = 0.4
 
@@ -25,6 +26,10 @@ export default class WheelAssembly {
         this.topKnuckleJointHorizontalOffsetPixel = topKnuckleJointHorizontalOffsetMM * this.renderConstant;
         this.lowerKnuckleJointVeritcalOffsetPixel = lowerKnuckleJointVeritcalOffsetMM * this.renderConstant;
         this.lowerKnuckleJointHorizontalOffsetPixel = lowerKnuckleJointHorizontalOffsetMM * this.renderConstant;
+    }
+
+    getDisplayName() {
+        return "Wheel Assembly";
     }
 
     setCamber(camber) {
@@ -117,6 +122,8 @@ export default class WheelAssembly {
 
         return rotatedJoints;
     }
+
+    testConstraintsAndAdjust() { return true; }
 
     getJointsRelativeToHubFace() {
         return [ 

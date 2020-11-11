@@ -9,7 +9,7 @@ export default class Chassis {
         this.angle = 0;
         this.container = container;
         this.vehOrigin = [350, 300];
-        
+        this.measurements = []; //TODO
         const thisRef = this;
 
         
@@ -31,6 +31,8 @@ export default class Chassis {
         });        
     }
 
+    testConstraintsAndAdjust() { return true; }
+    getDisplayName() { return "Chassis"; }
     getJoints() {
         return this.joints;
     }

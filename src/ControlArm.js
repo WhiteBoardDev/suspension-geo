@@ -1,15 +1,23 @@
 import * as PIXI from 'pixi.js'
 import * as geometric from 'geometric';
+import Measurement from './Measurement';
 
 
 export default class ControlArm {
 
-    constructor(container, wheelAssembly, boundedVehiclePointProvider, armLength) {
+    constructor(container, wheelAssembly, boundedVehiclePointProvider, armLength, displayName) {
         this.container = container;
         this.wheelAssembly = wheelAssembly;
+        this.displayName = displayName;
         this.boundedVehiclePointProvider = boundedVehiclePointProvider;
-        this.armLength = armLength;
-        this.armAngle = 175;
+        this.measurements = [
+            new Measurement("armLength", armLength, "mm"),
+            new Measurement("armAngle", 175, "degrees")
+        ]
+    }
+
+    getDisplayName() {
+        return this.displayName;
     }
 
     render() {
@@ -39,7 +47,7 @@ export default class ControlArm {
     vectorDistanceFromEndOfArmToKnucklePoint() {
         const knuckleJoint = this.wheelAssembly.getJoints()[1];
         const vehicleJoint = this.boundedVehiclePointProvider();
-        const expectedKnuckleJointLocation = geometric.pointTranslate(vehicleJoint, this.armAngle, this.armLength);
+        const expectedKnuckleJointLocation = geometric.pointTranslate(vehicleJoint, this.measurements[1].getValue(), this.measurements[0].getValue());
         const vectorChange = [
             expectedKnuckleJointLocation[0] - knuckleJoint[0],
             expectedKnuckleJointLocation[1] - knuckleJoint[1]
@@ -48,7 +56,7 @@ export default class ControlArm {
     }
 
     setArmAngle(angle) {
-        this.armAngle = angle;
+        this.measurements[1].updateValue(angle);
     }
 
     contraintsMet() {
