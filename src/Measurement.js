@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 export default class Measurement {
     
     constructor(name, value, unit, userAdjustable, minValue, maxValue) {
-        this.renderConstant = 0.6;
+        this.renderConstant = 0.55;
         this.userAdjustable = userAdjustable;
         this.name = name;
         this.id = uuidv4();
@@ -28,6 +28,13 @@ export default class Measurement {
     updateValue(value) {
         if(isNaN(value)) {
             throw new Error("Cannot set value to undefined " + this.getName());
+        }
+        if (typeof value === "string") {
+            if(value.includes('.')) {
+                value = parseFloat(value)
+            } else {
+                value = parseInt(value)
+            }
         }
         if(value < this.minValue || value > this.maxValue) {
             throw new Error("Value is out of bounds " + value + " min=" + this.minValue + " maxValue=" + this.maxValue + " name=" + this.getName());

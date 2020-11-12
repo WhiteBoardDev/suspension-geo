@@ -14,12 +14,12 @@ export default class ControlArm {
         this.chassisRollProvider = chassisRollProvider;
         this.measurements = [
             new Measurement("Length", 400, "mm", true, 1, 1000),
-            new Measurement("Angle From Chassis", 175, "degrees", true, 0, 200)
+            new Measurement("Angle From Chassis", 175, "degrees", true, 100, 240)
         ]
     }
 
     getId() { return this.id; } 
-    
+
     getDisplayName() {
         return this.displayName;
     }

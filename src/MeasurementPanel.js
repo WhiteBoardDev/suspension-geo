@@ -50,7 +50,7 @@ export default class MeasurementPanel extends React.Component {
             value={measurement.getValue()}
             margin="dense"
             onChange={function(event) {
-                const value = event.target.value
+                const value = parseInt(event.target.value)
                 if(value >= measurement.minValue && value <= measurement.maxValue) {
                     onMeasurementChange(measurement.getId(), event.target.value)
                 }

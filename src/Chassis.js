@@ -7,7 +7,7 @@ export default class Chassis {
     constructor(container) {
         this.id = uuidv4();
         this.container = container;
-        this.vehOriginPoint = [175, 300];
+        this.vehOriginPoint = [250, 200];
         this.measurements = [
             new Measurement("Rotation", 0, "degrees", true, -45, 45),
             new Measurement("Mounting Point Vertical Length", 500, "mm", true, 1, 1000),
@@ -17,7 +17,7 @@ export default class Chassis {
     }
 
     getId() { return this.id; } 
-    
+
     testConstraintsAndAdjust() { return true; }
     getDisplayName() { return "Chassis"; }
     getJoints() {
