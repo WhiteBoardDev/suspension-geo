@@ -1,42 +1,36 @@
 import * as PIXI from 'pixi.js'
 import * as geometric from 'geometric';
+import Measurement from './Measurement';
 
 const jointSize = 4;
 
 // The Hub Face is at x=0, y=0
 export default class WheelAssembly {
-    constructor(container, tireWidth, tireRatio, wheelSizeInch, wheelOffset, isLeft) {
+    constructor(container) {
         this.container = container;
-        this.tireWidth = tireWidth;
-        this.tireRatio = tireRatio;
-        this.wheelSizeInch = wheelSizeInch;
-        this.wheelOffset = wheelOffset;
         this.hubFaceCenterOrigin = [200,  200]; 
-        this.camber = 0;
-        this.measurements = []; // TODO
-
-        this.renderConstant = 0.4
-
-        const topKnuckleJointVerticalOffsetMM = 100;
-        const topKnuckleJointHorizontalOffsetMM = 80;
-        const lowerKnuckleJointVeritcalOffsetMM = 100;
-        const lowerKnuckleJointHorizontalOffsetMM = 50;
-
-        this.topKnuckleJointVerticalOffsetPixel = topKnuckleJointVerticalOffsetMM * this.renderConstant;
-        this.topKnuckleJointHorizontalOffsetPixel = topKnuckleJointHorizontalOffsetMM * this.renderConstant;
-        this.lowerKnuckleJointVeritcalOffsetPixel = lowerKnuckleJointVeritcalOffsetMM * this.renderConstant;
-        this.lowerKnuckleJointHorizontalOffsetPixel = lowerKnuckleJointHorizontalOffsetMM * this.renderConstant;
+        this.measurements = [
+            new Measurement("Tire Width", 215, "mm", true, 0, 500),
+            new Measurement("topKnuckleJointVerticalOffset", 120, "mm", true, 0, 1000),
+            new Measurement("topKnuckleJointHorizontalOffset", 80, "mm", true, 0, 1000),
+            new Measurement("lowerKnuckleJointVeritcalOffset", 50, "mm", true, 0, 1000),
+            new Measurement("lowerKnuckleJointHorizontalOffset", 50, "mm", true, 0, 1000),
+            new Measurement("camber", 0, "degrees", false, -60, 60),
+            new Measurement("Wheel Diameter", 17, "in", true, 5, 25),
+            new Measurement("Tire Ratio", 65, "percent", true, 10, 80),
+            new Measurement("Wheel Offset", -30, "mm", true, -200, 200)
+        ];
     }
 
     getDisplayName() {
         return "Wheel Assembly";
     }
 
-    setCamber(camber) {
-        this.camber = camber;
+    setCamber(camberAngle) {
+        this.measurements[5].updateValue(camberAngle);
     }
 
-    getCamber() { return this.camber; }
+    getCamber() { return this.measurements[5].getValue(); }
 
     moveRelative(point) {
         this.hubFaceCenterOrigin[0] += point[0];
@@ -45,20 +39,16 @@ export default class WheelAssembly {
 
     render() {
         const container = this.container;
-        const tireWidth = this.tireWidth;
-        const tireRatio = this.tireRatio;
-        const wheelSizeInch = this.wheelSizeInch;
-        const wheelOffset = this.wheelOffset;
-        const camber = this.camber;
-        const renderConstant = this.renderConstant;
-        const sideWallHeight = tireWidth * (tireRatio/100)
-        const wheelSizeInMM = wheelSizeInch * 25.4
-        const tireHeightMM = (sideWallHeight * 2) + wheelSizeInMM
+        const tireRatio = this.measurements[7].getValue();
+        const wheelSize = this.measurements[6];
+        const wheelSizePixles = wheelSize.getValueAsPixles();
+        const wheelOffset = this.measurements[8];
+        const camber = this.measurements[5].getValue();
+        const tireWidthPixes = this.measurements[0].getValueAsPixles();
+        const sideWallHeightPixels = tireWidthPixes * (tireRatio/100)
+        const tireHeightPixels = (sideWallHeightPixels * 2) + wheelSizePixles
+        const wheelOffsetPixles = wheelOffset.getValueAsPixles();
         
-        const tireHeightPixels = tireHeightMM * renderConstant
-        const wheelOffsetPixles = wheelOffset * renderConstant;
-        this.tireWidthPixes = tireWidth * renderConstant
-    
         const hubFaceCenterOrigin = this.hubFaceCenterOrigin;
         
         
@@ -72,27 +62,37 @@ export default class WheelAssembly {
      
         //tire shape
         const tireOrigin = [
-            -(this.tireWidthPixes / 2) + wheelOffsetPixles,
+            -(tireWidthPixes / 2) + wheelOffsetPixles,
             -(tireHeightPixels / 2)
         ];
-        graphics.lineStyle(2, 0xFF00FF, 1);
-        graphics.beginFill(0x650A5A, 0.25);
-        graphics.drawRoundedRect(tireOrigin[0], tireOrigin[1], this.tireWidthPixes, tireHeightPixels, 16);
+        graphics.lineStyle(2, 0x141414, 0.3);
+        graphics.beginFill(0x141414, 0.1);
+        graphics.drawRoundedRect(tireOrigin[0], tireOrigin[1], tireWidthPixes, tireHeightPixels, 16);
+        graphics.endFill();
+
+        //wheel
+        const wheelOrigin = [
+            -(tireWidthPixes / 2) + wheelOffsetPixles,
+            -(wheelSizePixles / 2)
+        ];
+        graphics.lineStyle(1, 0xf5f5f2, 2);
+        graphics.beginFill(0x51707a, 0.40);
+        graphics.drawRoundedRect(wheelOrigin[0], wheelOrigin[1], tireWidthPixes, wheelSizePixles, 1);
         graphics.endFill();
 
 
         //hub center
-        graphics.lineStyle(3, 0xEEEEEE, 0.3, 0.5);
-        graphics.moveTo(0, -10);
-        graphics.lineTo(0, 10);
-        graphics.moveTo(-10, 0);
-        graphics.lineTo(10, 0);
+        graphics.lineStyle(1, 0xe00408, 0.9);
+        graphics.moveTo(0, -20);
+        graphics.lineTo(0, 20);
+        graphics.moveTo(-20, 0);
+        graphics.lineTo(20, 0);
 
         //track width line
         const trackWidthXPosition = wheelOffsetPixles;
         graphics.lineStyle(2, 0x000000, 0.3, 0.5);
-        graphics.moveTo(trackWidthXPosition, -200);
-        graphics.lineTo(trackWidthXPosition, 200);
+        graphics.moveTo(trackWidthXPosition, -tireHeightPixels * 0.7);
+        graphics.lineTo(trackWidthXPosition, tireHeightPixels * 0.7);
        
         graphics.endFill();
 
@@ -111,14 +111,13 @@ export default class WheelAssembly {
 
     getJoints() {
         const hubFaceCenterOrigin = this.hubFaceCenterOrigin;
-        const camber = this.camber;
+        const camber = this.measurements[5].getValue();
         const joints =  this.getJointsRelativeToHubFace();
         const rotatedJoints = joints.map( joint => {
             const translatedJoint = [ joint[0] + hubFaceCenterOrigin[0],  joint[1] + hubFaceCenterOrigin[1]];
             const rotated = geometric.pointRotate(translatedJoint, camber, hubFaceCenterOrigin)
             return rotated
-        }
-        );
+        });
 
         return rotatedJoints;
     }
@@ -126,11 +125,16 @@ export default class WheelAssembly {
     testConstraintsAndAdjust() { return true; }
 
     getJointsRelativeToHubFace() {
+        const topKnuckleJointVerticalOffsetPixel = this.measurements[1].getValueAsPixles();
+        const topKnuckleJointHorizontalOffsetPixel = this.measurements[2].getValueAsPixles();
+        const lowerKnuckleJointVeritcalOffsetPixel = this.measurements[3].getValueAsPixles();
+        const lowerKnuckleJointHorizontalOffsetPixel = this.measurements[4].getValueAsPixles();
+        
         return [ 
             // joint 0 - top knuckle
-            [this.topKnuckleJointHorizontalOffsetPixel, -this.topKnuckleJointVerticalOffsetPixel ],
+            [topKnuckleJointHorizontalOffsetPixel, -topKnuckleJointVerticalOffsetPixel],
             // joint 1 - lower knuckle
-            [this.lowerKnuckleJointHorizontalOffsetPixel, this.lowerKnuckleJointVeritcalOffsetPixel]
+            [lowerKnuckleJointHorizontalOffsetPixel, lowerKnuckleJointVeritcalOffsetPixel]
          ];
     }
 }

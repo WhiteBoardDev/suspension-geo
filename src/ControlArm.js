@@ -5,14 +5,15 @@ import Measurement from './Measurement';
 
 export default class ControlArm {
 
-    constructor(container, wheelAssembly, boundedVehiclePointProvider, armLength, displayName) {
+    constructor(container, wheelAssembly, boundedVehiclePointProvider, chassisRollProvider, displayName) {
         this.container = container;
         this.wheelAssembly = wheelAssembly;
         this.displayName = displayName;
         this.boundedVehiclePointProvider = boundedVehiclePointProvider;
+        this.chassisRollProvider = chassisRollProvider;
         this.measurements = [
-            new Measurement("armLength", armLength, "mm"),
-            new Measurement("armAngle", 175, "degrees")
+            new Measurement("Length", 400, "mm", true, 1, 1000),
+            new Measurement("Angle From Chassis", 175, "degrees", true, 0, 200)
         ]
     }
 
@@ -30,14 +31,14 @@ export default class ControlArm {
         const knuckleJoint = this.wheelAssembly.getJoints()[1];
         const vehicleJoint = this.boundedVehiclePointProvider();
         //drawing arm
-        graphics.lineStyle(3, 0xFADDFF, 1);
+        graphics.lineStyle(3, 0x96303c, 1);
         graphics.moveTo(knuckleJoint[0], knuckleJoint[1]);
         graphics.lineTo(vehicleJoint[0], vehicleJoint[1]);
         container.addChild(graphics);
     }
 
     testConstraintsAndAdjust() {
-        if(!this.contraintsMet()){
+        if(!this.contraintsMet()) {
             this.wheelAssembly.moveRelative(this.vectorDistanceFromEndOfArmToKnucklePoint());
             return false;
         }
@@ -47,7 +48,9 @@ export default class ControlArm {
     vectorDistanceFromEndOfArmToKnucklePoint() {
         const knuckleJoint = this.wheelAssembly.getJoints()[1];
         const vehicleJoint = this.boundedVehiclePointProvider();
-        const expectedKnuckleJointLocation = geometric.pointTranslate(vehicleJoint, this.measurements[1].getValue(), this.measurements[0].getValue());
+        const chassisRoleAngle = this.chassisRollProvider();
+
+        const expectedKnuckleJointLocation = geometric.pointTranslate(vehicleJoint, this.measurements[1].getValue() + chassisRoleAngle, this.measurements[0].getValueAsPixles());
         const vectorChange = [
             expectedKnuckleJointLocation[0] - knuckleJoint[0],
             expectedKnuckleJointLocation[1] - knuckleJoint[1]

@@ -5,8 +5,9 @@ import ControlArm from './ControlArm'
 import WheelAssembly from './WheelAssembly'
 import Strut from './Strut'
 import MeasurementPanel from './MeasurementPanel'
+import { Grid, Drawer } from '@material-ui/core'
 
-const width = 1000
+const width = 1280
 const height = 1000
 
 export default class Macpherson extends React.Component {
@@ -14,22 +15,22 @@ export default class Macpherson extends React.Component {
         super(props); 
         this.pixi_cnt = null;
         this.app = new PIXI.Application({
-            width: width, height: height, backgroundColor: 0x1099bb
+            width: width, height: height, backgroundColor: 0xFFFFFF
         })  
         
         const container = new PIXI.Container();
         this.app.stage.addChild(container);
         const vehicle = new Chassis(container)
-        const lWheel = new WheelAssembly(container, 265, 45, 17, -30, true)
+        const lWheel = new WheelAssembly(container)
         const lStrut = new Strut(container, lWheel, function() { return vehicle.getJoints()[0]; }, 15)
         const lLowerControlArm = new ControlArm(container, 
             lWheel,  // TODO push the chassis around instead of the wheel assembly
             function() { return vehicle.getJoints()[2]; }, 
-            200, 
+            function() { return vehicle.measurements[0].getValue(); }, 
             "Lower Left Control Arm"
         );
         this.state = { 
-            modelComponents: [ lStrut, lLowerControlArm, lWheel, vehicle ] 
+            modelComponents: [ lLowerControlArm, lStrut, lWheel, vehicle ] 
         };
         this.testConstraintsAndAdjust();
     }
@@ -72,11 +73,22 @@ export default class Macpherson extends React.Component {
         } 
     };
 
+      //<Grid item xs={3}><MeasurementPanel modelComponents={this.state.modelComponents} onMeasurementChange={(id, value) => { this.onMeasurementChange(id, value); }}></MeasurementPanel></Grid>
+              
       
     render() {
 
-        return <div>
-            <MeasurementPanel modelComponents={this.state.modelComponents} onMeasurementChange={(id, value) => { this.onMeasurementChange(id, value); }}></MeasurementPanel>
-      <div ref={this.updatePixiCnt} /></div>;
+
+
+        return <Grid container direction="row" justify="left" alignItems="stretch" spacing={3}>
+                    <Grid item xs={3}>
+                    <Drawer variant="permanent">
+                        <MeasurementPanel modelComponents={this.state.modelComponents} onMeasurementChange={(id, value) => { this.onMeasurementChange(id, value); }}></MeasurementPanel>
+      </Drawer>
+      </Grid>
+      <Grid item xs={9}>
+        <div ref={this.updatePixiCnt} /> 
+      </Grid>
+                </Grid>;
       }
 }
