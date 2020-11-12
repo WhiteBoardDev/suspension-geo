@@ -5,22 +5,10 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 
 export default class MeasurementPanel extends React.Component { 
 
-
-    suspensionModelComponent(modelComponent, onMeasurementChange) {
-        
-        return <Grid item xs={12} spacing={3}>
-             <Card ><CardContent>
-                 <h2>{modelComponent.getDisplayName()}</h2>
-                    {modelComponent.measurements.map(measurement => this.meaurementDisplay(modelComponent, measurement, onMeasurementChange))}
-            </CardContent></Card>
-        </Grid>
-    }
-
-
-    meaurementDisplay(modelComponent, measurement, onMeasurementChange) {
+    measurementDisplay(modelComponent, measurement, onMeasurementChange) {
 
         if(measurement.userAdjustable) {
-            return  <Accordion>
+            return  <Accordion key={measurement.id}>
             <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             aria-controls="panel1a-content"
@@ -33,7 +21,7 @@ export default class MeasurementPanel extends React.Component {
             </AccordionDetails>
             </Accordion>
         } else {
-            return  <Accordion>
+            return  <Accordion key={measurement.id}>
             <AccordionSummary
             aria-controls="panel1a-content"
             id="panel1a-header"
@@ -47,8 +35,7 @@ export default class MeasurementPanel extends React.Component {
     }
 
     adjustment(measurement, onMeasurementChange) {
-            return  <Grid container spacing={2} xs={12} alignItems="center"><Grid item xs={9}><Slider
-            defaultValue={measurement.getValue()}
+            return  <Grid container spacing={2} alignItems="center"><Grid item xs={9}><Slider
             aria-labelledby="discrete-slider-small-steps"
             step={1}
             marks
@@ -82,8 +69,14 @@ export default class MeasurementPanel extends React.Component {
 
 
     render() {
-        return <Grid container item xs={12} spacing={1}  direction="column">
-                    {this.props.modelComponents.map( (value) => { return this.suspensionModelComponent(value, this.props.onMeasurementChange); } )}
+        return <Grid item>
+                    {this.props.modelComponents.map( (component) => { 
+                        return <Grid key={component.id} item xs={12}>
+                                    <Card><CardContent>
+                                        <h2>{component.getDisplayName()}</h2>
+                                        {component.measurements.map(measurement => this.measurementDisplay(component, measurement, this.props.onMeasurementChange))}
+                                         </CardContent></Card>
+                                 </Grid> } )}
       </Grid>
     }
 }

@@ -1,12 +1,13 @@
 import * as PIXI from 'pixi.js'
 import * as geometric from 'geometric';
 import Measurement from './Measurement';
-
+import { v4 as uuidv4 } from 'uuid';
 const jointSize = 4;
 
 // The Hub Face is at x=0, y=0
 export default class WheelAssembly {
     constructor(container) {
+        this.id = uuidv4();
         this.container = container;
         this.hubFaceCenterOrigin = [200,  200]; 
         this.measurements = [
@@ -22,6 +23,8 @@ export default class WheelAssembly {
         ];
     }
 
+    getId() { return this.id; } 
+    
     getDisplayName() {
         return "Wheel Assembly";
     }

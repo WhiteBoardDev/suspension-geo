@@ -1,9 +1,11 @@
 import * as PIXI from 'pixi.js'
 import * as geometric from 'geometric';
 import Measurement from './Measurement'
+import { v4 as uuidv4 } from 'uuid';
 
 export default class Chassis {
     constructor(container) {
+        this.id = uuidv4();
         this.container = container;
         this.vehOriginPoint = [175, 300];
         this.measurements = [
@@ -14,6 +16,8 @@ export default class Chassis {
         ]
     }
 
+    getId() { return this.id; } 
+    
     testConstraintsAndAdjust() { return true; }
     getDisplayName() { return "Chassis"; }
     getJoints() {

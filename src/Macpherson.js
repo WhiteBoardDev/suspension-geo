@@ -9,6 +9,7 @@ import { Grid, Drawer } from '@material-ui/core'
 
 const width = 1280
 const height = 1000
+const iterationLimitForConstraints = 1000;
 
 export default class Macpherson extends React.Component {
     constructor(props) {
@@ -35,22 +36,26 @@ export default class Macpherson extends React.Component {
         this.testConstraintsAndAdjust();
     }
 
-    testConstraintsAndAdjust() {
-        var allConstraintsMet = false;
-        const modelComponents = this.state.modelComponents;
-        while(!allConstraintsMet) {
-            allConstraintsMet = true;
-            modelComponents.forEach(function(value){
-                if(!value.testConstraintsAndAdjust()) {
-                    allConstraintsMet = false;
-                }
-            })
+    attemptConstrain(attemptNumber, modelComponents, onSuccess) {
+        if(attemptNumber >= iterationLimitForConstraints) {
+            throw new Error("Could not meet contraints of model");
         }
-        modelComponents.forEach(function(value) {
-           value.render(); 
-        });
+        const constrainedComps = modelComponents.filter( comp => comp.testConstraintsAndAdjust());
+        if(constrainedComps.length === modelComponents.length) {
+            onSuccess(constrainedComps);
+        } else {
+            this.testConstraintsAndAdjust(attemptNumber+1, modelComponents, onSuccess);
+        }
+    }
 
-        this.setState({ modelComponents: modelComponents });
+    testConstraintsAndAdjust() {
+        const thisRef = this;
+        this.attemptConstrain(0, this.state.modelComponents, function(constrainedComps){
+            constrainedComps.forEach(function(value) {
+                value.render(); 
+             });
+             thisRef.setState({ modelComponents: constrainedComps });
+        });
     }
 
     onMeasurementChange(measurementId, value) {
@@ -73,14 +78,8 @@ export default class Macpherson extends React.Component {
         } 
     };
 
-      //<Grid item xs={3}><MeasurementPanel modelComponents={this.state.modelComponents} onMeasurementChange={(id, value) => { this.onMeasurementChange(id, value); }}></MeasurementPanel></Grid>
-              
-      
     render() {
-
-
-
-        return <Grid container direction="row" justify="left" alignItems="stretch" spacing={3}>
+        return <Grid container direction="row" justify="center" alignItems="stretch" spacing={3}>
                     <Grid item xs={3}>
                     <Drawer variant="permanent">
                         <MeasurementPanel modelComponents={this.state.modelComponents} onMeasurementChange={(id, value) => { this.onMeasurementChange(id, value); }}></MeasurementPanel>

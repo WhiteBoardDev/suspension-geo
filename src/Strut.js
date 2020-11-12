@@ -1,10 +1,11 @@
 import * as PIXI from 'pixi.js'
 import * as geometric from 'geometric';
 import Measurement from './Measurement'
-
+import { v4 as uuidv4 } from 'uuid';
 //stuck at some constant angle from wheel assembly
 export default class Strut {
     constructor(container, wheelAssembly, boundedVehiclePointProvider, isFront, isLeft) {
+        this.id = uuidv4();
         this.isFront = isFront;
         this.isLeft = isLeft;
         this.container = container;
@@ -16,6 +17,8 @@ export default class Strut {
         ]; //TODO
     }
 
+    getId() { return this.id; } 
+    
     testConstraintsAndAdjust() {
         if(!this.constraintsMet()) {
             const angleOnKnuckle = this.measurements[0].getValue();

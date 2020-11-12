@@ -1,11 +1,12 @@
 import * as PIXI from 'pixi.js'
 import * as geometric from 'geometric';
 import Measurement from './Measurement';
-
+import { v4 as uuidv4 } from 'uuid';
 
 export default class ControlArm {
 
     constructor(container, wheelAssembly, boundedVehiclePointProvider, chassisRollProvider, displayName) {
+        this.id = uuidv4();
         this.container = container;
         this.wheelAssembly = wheelAssembly;
         this.displayName = displayName;
@@ -17,6 +18,8 @@ export default class ControlArm {
         ]
     }
 
+    getId() { return this.id; } 
+    
     getDisplayName() {
         return this.displayName;
     }
