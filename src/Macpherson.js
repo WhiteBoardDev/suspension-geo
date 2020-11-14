@@ -52,14 +52,16 @@ export default class Macpherson extends React.Component {
     }
 
     attemptConstrain(attemptNumber, modelComponents, onSuccess) {
-        if(attemptNumber >= iterationLimitForConstraints) {
-            throw new Error("Could not meet contraints of model");
-        }
         const constrainedComps = modelComponents.filter( comp => comp.testConstraintsAndAdjust());
         if(constrainedComps.length === modelComponents.length) {
             console.log("Success contraining. Attempts=" + attemptNumber);
             onSuccess(constrainedComps);
         } else {
+            if(attemptNumber >= iterationLimitForConstraints) {
+                constrainedComps.forEach( compSuccess =>  console.log("Success contrained :" + compSuccess.getDisplayName()));
+                throw new Error("Could not meet contraints of model");
+            }
+
             this.attemptConstrain(attemptNumber+1, modelComponents, onSuccess);
         }
     }

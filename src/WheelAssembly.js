@@ -18,7 +18,7 @@ export default class WheelAssembly {
             new Measurement("topKnuckleJointHorizontalOffset", 80, "mm", true, 0, 1000),
             new Measurement("lowerKnuckleJointVeritcalOffset", 50, "mm", true, 0, 1000),
             new Measurement("lowerKnuckleJointHorizontalOffset", 50, "mm", true, 0, 1000),
-            new Measurement("camber", 0, "degrees", false, -60, 60),
+            new Measurement("camber", 0, "degrees", false, -100, 100),
             new Measurement("Wheel Diameter", 17, "in", true, 5, 25),
             new Measurement("Tire Ratio", 65, "percent", true, 10, 80),
             new Measurement("Wheel Offset", -30, "mm", true, -200, 200)

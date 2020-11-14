@@ -16,7 +16,7 @@ export default class ControlArm {
         this.chassisTranslateRequest = chassisTranslateRequest;
         this.measurements = [
             new Measurement("Length", 400, "mm", true, 1, 1000),
-            new Measurement("Angle", 0, "degrees", false, -100, 240)
+            new Measurement("Angle", 0, "degrees", false, -1000, 2400)
         ]
     }
 

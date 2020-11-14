@@ -3,26 +3,26 @@ import * as geometric from 'geometric';
 import Measurement from './Measurement'
 import { v4 as uuidv4 } from 'uuid';
 
+
+const xOriginLocation = 250;
+
 export default class Chassis {
     constructor(container, ground) {
         this.id = uuidv4();
         this.container = container;
         this.ground = ground;
-        this.vehOriginPoint = [250, 500];
         this.measurements = [
             new Measurement("Rotation", 0, "degrees", true, -45, 45),
             new Measurement("Mounting Point Vertical Length", 500, "mm", true, 1, 1000),
             new Measurement("Strut Top Separation", 1000, "mm", true, 1, 2000),
             new Measurement("Lower Control Arm Separation", 400, "mm", true, 1, 2000),
             new Measurement("Left Lower Pickup Point to Ground", 200, "mm", false, 0, 1000),
-            new Measurement("Right Lower Pickup Point to Ground", 200, "mm", false, 0, 1000)
+            new Measurement("Right Lower Pickup Point to Ground", 200, "mm", false, 0, 1000),
+            new Measurement("Ground Clearance", 150, 'mm', true, 1, 1000)
         ]
     }
 
-    moveRelative(point) {
-        this.vehOriginPoint[0] += point[0]
-        this.vehOriginPoint[1] += point[1]
-    }
+    
 
     getId() { return this.id; } 
 
@@ -41,9 +41,11 @@ export default class Chassis {
         const vehHeightPixles = this.measurements[1].getValueAsPixles()
         const vehWidthTopPixles = this.measurements[2].getValueAsPixles()
         const vehWidthBottomPixles = this.measurements[3].getValueAsPixles()
+        const groundHeightPixles = this.measurements[6].getValueAsPixles()
+
         const joints = [
             // 0 - top left
-            [ this.vehOriginPoint[0], this.vehOriginPoint[1]]
+            [ xOriginLocation, this.ground.groundYAxis - groundHeightPixles - vehHeightPixles]
            
         ];
         // 1 - top right
@@ -54,7 +56,7 @@ export default class Chassis {
         joints.push([joints[2][0] + vehWidthBottomPixles, joints[2][1]]);
 
         joints.forEach( function(value, index, array) {
-            const rotated = geometric.pointRotate(value, thisRef.measurements[0].getValue(), thisRef.vehOriginPoint)
+            const rotated = geometric.pointRotate(value, thisRef.measurements[0].getValue(), [xOriginLocation, (vehHeightPixles/2) + groundHeightPixles])
             array[index] = rotated;
         });        
         return joints;
