@@ -1,5 +1,5 @@
 import React from 'react';
-import { Slider, Input, Grid, Card, CardContent, Accordion, AccordionSummary, AccordionDetails, Typography} from '@material-ui/core'
+import { Input, Grid, Card, CardContent, Accordion, AccordionSummary, AccordionDetails, Typography} from '@material-ui/core'
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 
 
@@ -35,17 +35,8 @@ export default class MeasurementPanel extends React.Component {
     }
 
     adjustment(measurement, onMeasurementChange) {
-            return  <Grid container spacing={2} alignItems="center"><Grid item xs={9}><Slider
-            aria-labelledby="discrete-slider-small-steps"
-            step={1}
-            marks
-            onChange={function(event, value) {
-                onMeasurementChange(measurement.getId(), value)
-            }}
-            min={measurement.minValue}
-            max={measurement.maxValue}
-            valueLabelDisplay="off"
-          /></Grid><Grid item xs={3}>
+            return  <Grid container spacing={2} alignItems="center">
+                <Grid item xs={6}>
               <Input
             value={measurement.getValue()}
             margin="dense"

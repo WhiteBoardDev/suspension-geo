@@ -5,9 +5,10 @@ import { v4 as uuidv4 } from 'uuid';
 
 export default class ControlArm {
 
-    constructor(container, wheelAssembly, boundedVehiclePointProvider, chassisRollProvider, chassisTranslateRequest, displayName) {
+    constructor(container, wheelAssembly, boundedVehiclePointProvider, chassisRollProvider, chassisTranslateRequest, displayName, isLeft) {
         this.id = uuidv4();
         this.container = container;
+        this.isLeft = isLeft;
         this.wheelAssembly = wheelAssembly;
         this.displayName = displayName;
         this.boundedVehiclePointProvider = boundedVehiclePointProvider;
@@ -15,7 +16,7 @@ export default class ControlArm {
         this.chassisTranslateRequest = chassisTranslateRequest;
         this.measurements = [
             new Measurement("Length", 400, "mm", true, 1, 1000),
-            new Measurement("Angle From Chassis", 175, "degrees", true, 100, 240)
+            new Measurement("Angle", 0, "degrees", false, -100, 240)
         ]
     }
 
@@ -42,34 +43,45 @@ export default class ControlArm {
     }
 
     testConstraintsAndAdjust() {
-        if(!this.contraintsMet()) {
-            this.chassisTranslateRequest(this.translationRequiredFromChassisToLinkToArm());
+        
+        const expectedKnuckleXJointLocation = this.expectedKnuckleXJointLocation();
+        const actualKnuckleJointXLocation = this.wheelAssembly.getJoints()[1][0];
+        const difference = expectedKnuckleXJointLocation - actualKnuckleJointXLocation;
+        if(Math.abs(difference.toFixed(3)) > 0.008) {
+            // the control arm is doing all the pushing and pulling
+            // assuming the wheels are "stuck" to the ground, we move the wheel assembly in X
+            // and move chassis in Y
+            this.wheelAssembly.xMoveRequest(difference);
             return false;
         }
+
+        const knuckleJoint = this.wheelAssembly.getJoints()[1];
+        const vehicleJoint = this.boundedVehiclePointProvider();
+        const armAngle = geometric.lineAngle([knuckleJoint, vehicleJoint]);
+        this.measurements[1].updateValue(armAngle);
         return true;
     }
 
-    translationRequiredFromChassisToLinkToArm() {
+
+    expectedKnuckleXJointLocation() {
         const knuckleJoint = this.wheelAssembly.getJoints()[1];
         const vehicleJoint = this.boundedVehiclePointProvider();
-        const chassisRoleAngle = this.chassisRollProvider();
-        const angle = 180 - this.measurements[1].getValue() + chassisRoleAngle
+        const armLengthPixles = this.measurements[0].getValueAsPixles();
 
-        const expectedChassisJointLocation = geometric.pointTranslate(knuckleJoint, angle, this.measurements[0].getValueAsPixles());
-        const vectorChange = [
-            expectedChassisJointLocation[0] - vehicleJoint[0],
-            expectedChassisJointLocation[1] - vehicleJoint[1]
-        ]
-        return vectorChange;
+        //assumption, we aren't going to move the vehicle in the Y direction.
+        if(vehicleJoint[1] + armLengthPixles < knuckleJoint[1] || vehicleJoint[1] - armLengthPixles > knuckleJoint[1] ) {
+            throw new Error("Chassis too High in Y Axis!");
+        }
+        const yLength = Math.abs(vehicleJoint[1] - knuckleJoint[1]);
+    
+        var xLength = Math.sqrt(Math.pow(armLengthPixles, 2)  - Math.pow(yLength,2))
+
+        if(this.isLeft) {
+            return vehicleJoint[0] - xLength;
+        } else {
+            return vehicleJoint[0] + xLength;
+        }
     }
 
-    setArmAngle(angle) {
-        this.measurements[1].updateValue(angle);
-    }
-
-    contraintsMet() {
-        const point = this.translationRequiredFromChassisToLinkToArm();
-        return Math.abs(point[0].toFixed(3)) < 0.008 && Math.abs(point[1].toFixed(3)) < 0.008;
-    }
 }
 

@@ -25,17 +25,28 @@ export default class Macpherson extends React.Component {
         const ground = new Ground(container);
         const vehicle = new Chassis(container, ground)
         ground.render();
-        const lWheel = new WheelAssembly(container, ground)
-        const lStrut = new Strut(container, lWheel, function() { return vehicle.getJoints()[0]; }, 15)
+        const lWheel = new WheelAssembly(container, ground, true)
+        const rWheel = new WheelAssembly(container, ground, false)
+        const lStrut = new Strut(container, lWheel, function() { return vehicle.getJoints()[0]; }, true)
+        const rStrut = new Strut(container, rWheel, function() { return vehicle.getJoints()[1]; }, false)
         const lLowerControlArm = new ControlArm(container, 
             lWheel,
             function() { return vehicle.getJoints()[2]; }, 
             function() { return vehicle.measurements[0].getValue(); }, 
-            function(point) { vehicle.moveRelative(point); },
-            "Lower Left Control Arm"
+            function(value) { vehicle.moveRelativeInY(value); },
+            "Lower Left Control Arm",
+            true
         );
+
+        const rLowerControlArm = new ControlArm(container,
+            rWheel,
+            function() { return vehicle.getJoints()[3]; },
+            function() { return vehicle.measurements[0].getValue(); },
+            function(value) { vehicle.moveRelativeInY(value); },
+            "Lower Right Control Arm",
+            false);
         this.state = { 
-            modelComponents: [ lLowerControlArm, lStrut, lWheel, vehicle ] 
+            modelComponents: [ lLowerControlArm, rLowerControlArm, lWheel, rWheel,  vehicle, lStrut, rStrut ] 
         };
         this.testConstraintsAndAdjust();
     }
@@ -46,9 +57,10 @@ export default class Macpherson extends React.Component {
         }
         const constrainedComps = modelComponents.filter( comp => comp.testConstraintsAndAdjust());
         if(constrainedComps.length === modelComponents.length) {
+            console.log("Success contraining. Attempts=" + attemptNumber);
             onSuccess(constrainedComps);
         } else {
-            this.testConstraintsAndAdjust(attemptNumber+1, modelComponents, onSuccess);
+            this.attemptConstrain(attemptNumber+1, modelComponents, onSuccess);
         }
     }
 

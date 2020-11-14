@@ -4,9 +4,8 @@ import Measurement from './Measurement'
 import { v4 as uuidv4 } from 'uuid';
 //stuck at some constant angle from wheel assembly
 export default class Strut {
-    constructor(container, wheelAssembly, boundedVehiclePointProvider, isFront, isLeft) {
+    constructor(container, wheelAssembly, boundedVehiclePointProvider, isLeft) {
         this.id = uuidv4();
-        this.isFront = isFront;
         this.isLeft = isLeft;
         this.container = container;
         this.boundedVehiclePointProvider = boundedVehiclePointProvider;
@@ -14,7 +13,11 @@ export default class Strut {
         this.measurements = [
             new Measurement("Angle On Knuckle", 10, "degrees", true, -45, 45),
             new Measurement("Length", 1, "mm", false, 1, 4000),
-        ]; //TODO
+        ];
+
+        if(!isLeft){
+            this.measurements[0].updateValue(-10);
+        }
     }
 
     getId() { return this.id; } 
@@ -23,8 +26,9 @@ export default class Strut {
         if(!this.constraintsMet()) {
             const angleOnKnuckle = this.measurements[0].getValue();
             const boundedVehiclePoint = this.boundedVehiclePointProvider();
-            var strutAngle = geometric.lineAngle([ this.wheelAssembly.getJoints()[0], boundedVehiclePoint]) + 90;
-            var strutLength = geometric.lineLength([ this.wheelAssembly.getJoints()[0], boundedVehiclePoint]);
+            const knuckleJoint = this.wheelAssembly.getJoints()[0]; // TODO this is hard coded to left side
+            var strutAngle = geometric.lineAngle([ knuckleJoint, boundedVehiclePoint]) + 90;
+            var strutLength = geometric.lineLength([ knuckleJoint, boundedVehiclePoint]);
             this.measurements[1].updateValueInPixles(strutLength);
             var expectedCamber = strutAngle - angleOnKnuckle;
             this.wheelAssembly.setCamber(expectedCamber);
@@ -39,11 +43,6 @@ export default class Strut {
             result += "Left ";
         } else {
             result += "Right ";
-        }
-        if(this.isFront) {
-            result += "Front ";
-        }else {
-            result += "Rear ";
         }
 
         return result;

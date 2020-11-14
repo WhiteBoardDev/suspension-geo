@@ -8,7 +8,7 @@ export default class Chassis {
         this.id = uuidv4();
         this.container = container;
         this.ground = ground;
-        this.vehOriginPoint = [250, 200];
+        this.vehOriginPoint = [250, 500];
         this.measurements = [
             new Measurement("Rotation", 0, "degrees", true, -45, 45),
             new Measurement("Mounting Point Vertical Length", 500, "mm", true, 1, 1000),

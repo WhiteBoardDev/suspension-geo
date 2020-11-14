@@ -6,10 +6,11 @@ const jointSize = 4;
 
 // The Hub Face is at x=0, y=0
 export default class WheelAssembly {
-    constructor(container, ground) {
+    constructor(container, ground, isLeft) {
         this.id = uuidv4();
         this.container = container;
         this.ground = ground;
+        this.isLeft = isLeft;
         this.hubFaceCenterOrigin = [200,  200]; 
         this.measurements = [
             new Measurement("Tire Width", 215, "mm", true, 0, 500),
@@ -27,7 +28,11 @@ export default class WheelAssembly {
     getId() { return this.id; } 
     
     getDisplayName() {
-        return "Wheel Assembly";
+        var side = "Right";
+        if(this.isLeft) {
+            side = "Left";
+        }
+        return "Wheel Assembly " + side;
     }
 
     setCamber(camberAngle) {
@@ -46,8 +51,12 @@ export default class WheelAssembly {
         const tireWidthPixes = this.measurements[0].getValueAsPixles();
         const sideWallHeightPixels = tireWidthPixes * (tireRatio/100)
         const tireHeightPixels = (sideWallHeightPixels * 2) + wheelSizePixles
-        const wheelOffsetPixles = wheelOffset.getValueAsPixles();
         
+        var wheelOffsetPixles = wheelOffset.getValueAsPixles();
+        if(!this.isLeft) {
+            wheelOffsetPixles = -wheelOffsetPixles;
+        }
+
         const hubFaceCenterOrigin = this.hubFaceCenterOrigin;
         
         
@@ -108,8 +117,13 @@ export default class WheelAssembly {
         container.addChild(graphics);
     }
 
+    xMoveRequest(value) {
+        this.hubFaceCenterOrigin[0] += value;
+    }
+
     getJoints() {
         const hubFaceCenterOrigin = this.hubFaceCenterOrigin;
+        
         const tireRatio = this.measurements[7].getValue();
         const wheelSize = this.measurements[6];
         const wheelSizePixles = wheelSize.getValueAsPixles();
@@ -117,8 +131,8 @@ export default class WheelAssembly {
         const tireWidthPixes = this.measurements[0].getValueAsPixles();
         const sideWallHeightPixels = tireWidthPixes * (tireRatio/100)
         const tireHeightPixels = (sideWallHeightPixels * 2) + wheelSizePixles
-
         hubFaceCenterOrigin[1] = this.ground.groundYAxis - (tireHeightPixels / 2);
+        
         const joints =  this.getJointsRelativeToHubFace();
         const rotatedJoints = joints.map( joint => {
             const translatedJoint = [ joint[0] + hubFaceCenterOrigin[0],  joint[1] + hubFaceCenterOrigin[1]];
@@ -136,12 +150,21 @@ export default class WheelAssembly {
         const topKnuckleJointHorizontalOffsetPixel = this.measurements[2].getValueAsPixles();
         const lowerKnuckleJointVeritcalOffsetPixel = this.measurements[3].getValueAsPixles();
         const lowerKnuckleJointHorizontalOffsetPixel = this.measurements[4].getValueAsPixles();
+        if(this.isLeft) {
+            return [ 
+                // joint 0 - top knuckle
+                [topKnuckleJointHorizontalOffsetPixel, -topKnuckleJointVerticalOffsetPixel],
+                // joint 1 - lower knuckle
+                [lowerKnuckleJointHorizontalOffsetPixel, lowerKnuckleJointVeritcalOffsetPixel]
+             ];
+        } else {
+            return [ 
+                // joint 0 - top knuckle
+                [-topKnuckleJointHorizontalOffsetPixel, -topKnuckleJointVerticalOffsetPixel],
+                // joint 1 - lower knuckle
+                [-lowerKnuckleJointHorizontalOffsetPixel, lowerKnuckleJointVeritcalOffsetPixel]
+             ];
+        }
         
-        return [ 
-            // joint 0 - top knuckle
-            [topKnuckleJointHorizontalOffsetPixel, -topKnuckleJointVerticalOffsetPixel],
-            // joint 1 - lower knuckle
-            [lowerKnuckleJointHorizontalOffsetPixel, lowerKnuckleJointVeritcalOffsetPixel]
-         ];
     }
 }
