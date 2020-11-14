@@ -6,9 +6,10 @@ const jointSize = 4;
 
 // The Hub Face is at x=0, y=0
 export default class WheelAssembly {
-    constructor(container) {
+    constructor(container, ground) {
         this.id = uuidv4();
         this.container = container;
+        this.ground = ground;
         this.hubFaceCenterOrigin = [200,  200]; 
         this.measurements = [
             new Measurement("Tire Width", 215, "mm", true, 0, 500),
@@ -34,11 +35,6 @@ export default class WheelAssembly {
     }
 
     getCamber() { return this.measurements[5].getValue(); }
-
-    moveRelative(point) {
-        this.hubFaceCenterOrigin[0] += point[0];
-        this.hubFaceCenterOrigin[1] += point[1];
-    }
 
     render() {
         const container = this.container;
@@ -114,7 +110,15 @@ export default class WheelAssembly {
 
     getJoints() {
         const hubFaceCenterOrigin = this.hubFaceCenterOrigin;
+        const tireRatio = this.measurements[7].getValue();
+        const wheelSize = this.measurements[6];
+        const wheelSizePixles = wheelSize.getValueAsPixles();
         const camber = this.measurements[5].getValue();
+        const tireWidthPixes = this.measurements[0].getValueAsPixles();
+        const sideWallHeightPixels = tireWidthPixes * (tireRatio/100)
+        const tireHeightPixels = (sideWallHeightPixels * 2) + wheelSizePixles
+
+        hubFaceCenterOrigin[1] = this.ground.groundYAxis - (tireHeightPixels / 2);
         const joints =  this.getJointsRelativeToHubFace();
         const rotatedJoints = joints.map( joint => {
             const translatedJoint = [ joint[0] + hubFaceCenterOrigin[0],  joint[1] + hubFaceCenterOrigin[1]];

@@ -4,21 +4,37 @@ import Measurement from './Measurement'
 import { v4 as uuidv4 } from 'uuid';
 
 export default class Chassis {
-    constructor(container) {
+    constructor(container, ground) {
         this.id = uuidv4();
         this.container = container;
+        this.ground = ground;
         this.vehOriginPoint = [250, 200];
         this.measurements = [
             new Measurement("Rotation", 0, "degrees", true, -45, 45),
             new Measurement("Mounting Point Vertical Length", 500, "mm", true, 1, 1000),
             new Measurement("Strut Top Separation", 1000, "mm", true, 1, 2000),
             new Measurement("Lower Control Arm Separation", 400, "mm", true, 1, 2000),
+            new Measurement("Left Lower Pickup Point to Ground", 200, "mm", false, 0, 1000),
+            new Measurement("Right Lower Pickup Point to Ground", 200, "mm", false, 0, 1000)
         ]
+    }
+
+    moveRelative(point) {
+        this.vehOriginPoint[0] += point[0]
+        this.vehOriginPoint[1] += point[1]
     }
 
     getId() { return this.id; } 
 
-    testConstraintsAndAdjust() { return true; }
+    testConstraintsAndAdjust() { 
+        const joints = this.getJoints();
+        const lowerLeft = joints[2];
+        this.measurements[4].updateValueInPixles(this.ground.groundYAxis - lowerLeft[1]);
+        const lowerRight = joints[3];
+        this.measurements[5].updateValueInPixles(this.ground.groundYAxis - lowerRight[1]);
+        return true; 
+    }
+
     getDisplayName() { return "Chassis"; }
     getJoints() {
         const thisRef = this;

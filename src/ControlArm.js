@@ -5,13 +5,14 @@ import { v4 as uuidv4 } from 'uuid';
 
 export default class ControlArm {
 
-    constructor(container, wheelAssembly, boundedVehiclePointProvider, chassisRollProvider, displayName) {
+    constructor(container, wheelAssembly, boundedVehiclePointProvider, chassisRollProvider, chassisTranslateRequest, displayName) {
         this.id = uuidv4();
         this.container = container;
         this.wheelAssembly = wheelAssembly;
         this.displayName = displayName;
         this.boundedVehiclePointProvider = boundedVehiclePointProvider;
         this.chassisRollProvider = chassisRollProvider;
+        this.chassisTranslateRequest = chassisTranslateRequest;
         this.measurements = [
             new Measurement("Length", 400, "mm", true, 1, 1000),
             new Measurement("Angle From Chassis", 175, "degrees", true, 100, 240)
@@ -42,21 +43,22 @@ export default class ControlArm {
 
     testConstraintsAndAdjust() {
         if(!this.contraintsMet()) {
-            this.wheelAssembly.moveRelative(this.vectorDistanceFromEndOfArmToKnucklePoint());
+            this.chassisTranslateRequest(this.translationRequiredFromChassisToLinkToArm());
             return false;
         }
         return true;
     }
 
-    vectorDistanceFromEndOfArmToKnucklePoint() {
+    translationRequiredFromChassisToLinkToArm() {
         const knuckleJoint = this.wheelAssembly.getJoints()[1];
         const vehicleJoint = this.boundedVehiclePointProvider();
         const chassisRoleAngle = this.chassisRollProvider();
+        const angle = 180 - this.measurements[1].getValue() + chassisRoleAngle
 
-        const expectedKnuckleJointLocation = geometric.pointTranslate(vehicleJoint, this.measurements[1].getValue() + chassisRoleAngle, this.measurements[0].getValueAsPixles());
+        const expectedChassisJointLocation = geometric.pointTranslate(knuckleJoint, angle, this.measurements[0].getValueAsPixles());
         const vectorChange = [
-            expectedKnuckleJointLocation[0] - knuckleJoint[0],
-            expectedKnuckleJointLocation[1] - knuckleJoint[1]
+            expectedChassisJointLocation[0] - vehicleJoint[0],
+            expectedChassisJointLocation[1] - vehicleJoint[1]
         ]
         return vectorChange;
     }
@@ -66,7 +68,7 @@ export default class ControlArm {
     }
 
     contraintsMet() {
-        const point = this.vectorDistanceFromEndOfArmToKnucklePoint();
+        const point = this.translationRequiredFromChassisToLinkToArm();
         return Math.abs(point[0].toFixed(3)) < 0.008 && Math.abs(point[1].toFixed(3)) < 0.008;
     }
 }

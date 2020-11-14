@@ -5,6 +5,7 @@ import ControlArm from './ControlArm'
 import WheelAssembly from './WheelAssembly'
 import Strut from './Strut'
 import MeasurementPanel from './MeasurementPanel'
+import Ground from './Ground'
 import { Grid, Drawer } from '@material-ui/core'
 
 const width = 1280
@@ -21,13 +22,16 @@ export default class Macpherson extends React.Component {
         
         const container = new PIXI.Container();
         this.app.stage.addChild(container);
-        const vehicle = new Chassis(container)
-        const lWheel = new WheelAssembly(container)
+        const ground = new Ground(container);
+        const vehicle = new Chassis(container, ground)
+        ground.render();
+        const lWheel = new WheelAssembly(container, ground)
         const lStrut = new Strut(container, lWheel, function() { return vehicle.getJoints()[0]; }, 15)
         const lLowerControlArm = new ControlArm(container, 
-            lWheel,  // TODO push the chassis around instead of the wheel assembly
+            lWheel,
             function() { return vehicle.getJoints()[2]; }, 
             function() { return vehicle.measurements[0].getValue(); }, 
+            function(point) { vehicle.moveRelative(point); },
             "Lower Left Control Arm"
         );
         this.state = { 
